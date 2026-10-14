@@ -1,6 +1,6 @@
-# Print Shop Order Desk MVP
+# MakerFlow
 
-A manual-first order-management MVP for a small 3D-printing business. Capture requests from WhatsApp, Instagram, or phone calls, keep customer and print specifications together, and move each order through a simple production pipeline.
+A manual-first order-management MVP for small 3D-printing businesses. Capture requests from WhatsApp, Instagram, or phone calls, keep customer and print specifications together, and move each order through a simple production pipeline.
 
 ## Features
 

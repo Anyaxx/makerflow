@@ -1,7 +1,7 @@
 services:
   app:
     build: .
-    container_name: print-shop-order-desk
+    container_name: makerflow-app
     ports:
       - "8000:8000"
     environment:
@@ -17,7 +17,7 @@ services:
 
   ollama:
     image: ollama/ollama:latest
-    container_name: print-shop-ollama
+    container_name: makerflow-ollama
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped

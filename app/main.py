@@ -19,7 +19,7 @@ from app.llm import draft_order_from_message
 BASE_DIR = Path(__file__).resolve().parent
 STATUSES = {"new", "quoted", "paid", "in production", "ready", "shipped", "completed", "cancelled"}
 
-app = FastAPI(title="Print Shop Order Desk", version="0.2.0")
+app = FastAPI(title="MakerFlow", version="0.2.0")
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
