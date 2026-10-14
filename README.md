@@ -1,6 +1,6 @@
 # MakerFlow
 
-A manual-first order-management MVP for small 3D-printing businesses. Capture requests from WhatsApp, Instagram, or phone calls, keep customer and print specifications together, and move each order through a simple production pipeline.
+A manual-first order-management MVP for small businesses. Capture requests from WhatsApp, Instagram, or phone calls, keep customer and print specifications together, and move each order through a simple production pipeline.
 
 ## Features
 
@@ -9,7 +9,7 @@ A manual-first order-management MVP for small 3D-printing businesses. Capture re
 - Track `new`, `quoted`, `paid`, `in production`, `ready`, `shipped`, `completed`, and `cancelled`.
 - Dashboard for active orders with overdue highlighting and Active/Overdue/All filters.
 - Export the order queue as CSV for bookkeeping or fulfillment handoffs.
-- Optional Gemma/Ollama helper that turns pasted customer messages into editable order drafts. Manual entry still works without Ollama.
+- Gemma/Ollama helper that turns pasted customer messages into editable order drafts. Manual entry still works without Ollama.
 - SQLite persistence and a small FastAPI API.
 
 ## Run locally
@@ -22,8 +22,6 @@ pip install -r requirements.txt
 ollama pull gemma3:4b  # optional, only needed for Draft with Gemma
 uvicorn app.main:app --reload
 ```
-
-Open http://localhost:8000. Orders are stored in `data/orders.db`.
 
 ## Docker and DigitalOcean
 
