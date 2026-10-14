@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Print Shop Order Desk</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="hero">
+        <div><p class="eyebrow">Small-batch production desk</p><h1>Print Shop Order Desk</h1><p class="lede">Turn WhatsApp, Instagram, and phone requests into a simple order queue.</p></div>
+        <div class="badge">Manual-first · Gemma optional</div>
+      </header>
+      <main class="layout">
+        <section class="panel">
+          <h2>New order</h2>
+          <form id="draft-form">
+            <label for="message">Paste customer message</label>
+            <textarea id="message" name="message" rows="5" placeholder="“Hi, I need 4 black name plates, 10cm wide, ready Friday. I'm Maya, 555-0100.”"></textarea>
+            <button type="submit" class="primary">Draft with Gemma</button>
+          </form>
+          <p id="message-status" class="message"></p>
+          <form id="order-form" class="save-form">
+            <input id="sourceMessage" name="source_message" type="hidden" />
+            <div class="grid">
+              <div><label for="customerName">Customer</label><input id="customerName" name="customer_name" required /></div>
+              <div><label for="contact">Contact</label><input id="contact" name="contact" placeholder="Phone or handle" /></div>
+              <div><label for="item">Item</label><input id="item" name="item" required placeholder="e.g. custom name plates" /></div>
+              <div><label for="price">Price</label><input id="price" name="price" type="number" step="0.01" min="0" /></div>
+              <div><label for="depositAmount">Deposit paid</label><input id="depositAmount" name="deposit_amount" type="number" step="0.01" min="0" value="0" /></div>
+              <div><label for="currency">Currency</label><input id="currency" name="currency" value="USD" maxlength="3" /></div>
+              <div><label for="dueDate">Due date</label><input id="dueDate" name="due_date" type="date" /></div>
+              <div><label for="status">Status</label><select id="status" name="status"><option>new</option><option>quoted</option><option>paid</option><option>in production</option><option>ready</option><option>shipped</option><option>completed</option><option>cancelled</option></select></div>
+            </div>
+            <label for="specifications">Specifications</label><textarea id="specifications" name="specifications" rows="2" placeholder="Material, color, size, quantity…"></textarea>
+            <label for="deliveryDetails">Delivery details</label><input id="deliveryDetails" name="delivery_details" placeholder="Pickup, address, shipping, preferred time…" />
+            <label for="notes">Notes</label><textarea id="notes" name="notes" rows="2"></textarea>
+            <button type="submit" class="secondary">Save order</button>
+          </form>
+        </section>
+        <section class="panel">
+          <div class="section-heading"><div><p class="eyebrow">Live queue</p><h2>Orders</h2></div><div class="actions"><a class="export-button" href="/api/orders.csv">Export CSV</a><button id="refresh" class="link-button" type="button">Refresh</button></div></div>
+          <div class="filters"><button class="filter active" data-filter="active" type="button">Active</button><button class="filter" data-filter="overdue" type="button">Overdue</button><button class="filter" data-filter="all" type="button">All</button></div>
+          <div id="stats" class="stats"></div>
+          <div id="orders-list" class="orders-list"></div>
+        </section>
+      </main>
+    </div>
+    <script>
+      const draftForm = document.getElementById('draft-form'), orderForm = document.getElementById('order-form'), messageStatus = document.getElementById('message-status');
+      const fields = { customer_name: 'customerName', contact: 'contact', item: 'item', specifications: 'specifications', price: 'price', currency: 'currency', due_date: 'dueDate', delivery_details: 'deliveryDetails', notes: 'notes' };
+      let allOrders = [], currentFilter = 'active';
+      draftForm.addEventListener('submit', async (event) => {
+        event.preventDefault(); messageStatus.textContent = 'Gemma is drafting the order…';
+        try {
+          const response = await fetch('/api/draft', { method: 'POST', body: new FormData(draftForm) }), result = await response.json();
+          if (!response.ok) throw new Error(result.detail);
+          Object.entries(fields).forEach(([key, id]) => { document.getElementById(id).value = result.order[key] ?? ''; });
+          document.getElementById('sourceMessage').value = document.getElementById('message').value;
+          messageStatus.textContent = 'Draft ready — review it before saving.'; messageStatus.className = 'message success';
+        } catch (error) { messageStatus.textContent = error.message; messageStatus.className = 'message error'; }
+      });
+      orderForm.addEventListener('submit', async (event) => {
+        event.preventDefault(); const response = await fetch('/api/orders', { method: 'POST', body: new FormData(orderForm) });
+        if (response.ok) { orderForm.reset(); document.getElementById('currency').value = 'USD'; document.getElementById('depositAmount').value = '0'; messageStatus.textContent = 'Order saved.'; messageStatus.className = 'message success'; loadOrders(); }
+      });
+      document.getElementById('refresh').addEventListener('click', loadOrders);
+      async function loadOrders() {
+        allOrders = (await (await fetch('/api/orders')).json()).orders;
+        const active = allOrders.filter((order) => !['completed', 'cancelled'].includes(order.status));
+        document.getElementById('stats').innerHTML = `<span><strong>${active.length}</strong> active</span><span><strong>${allOrders.filter((o) => o.overdue).length}</strong> overdue</span><span><strong>${allOrders.filter((o) => o.status === 'ready').length}</strong> ready</span>`;
+        renderOrders();
+      }
+      function renderOrders() {
+        const orders = allOrders.filter((order) => currentFilter === 'all' || (currentFilter === 'overdue' ? order.overdue : !['completed', 'cancelled'].includes(order.status)));
+        document.getElementById('orders-list').innerHTML = orders.length ? orders.map((order) => `<article class="order ${order.overdue ? 'overdue' : ''}"><div class="order-main"><strong>${escapeHtml(order.item)} ${order.overdue ? '<em>Overdue</em>' : ''}</strong><span>${escapeHtml(order.customer_name)} · ${escapeHtml(order.contact || 'No contact')}</span><small>${escapeHtml(order.specifications || 'No specifications')} ${order.due_date ? `· Due ${escapeHtml(order.due_date)}` : '· No due date'}</small></div><div class="order-side"><b>${order.price == null ? 'Quote' : `${escapeHtml(order.currency)} ${Number(order.price).toFixed(2)}`}</b><small>${order.price == null ? '' : `Balance ${escapeHtml(order.currency)} ${Number(order.balance_due).toFixed(2)}`}</small><select aria-label="Change order status" onchange="changeStatus(${order.id}, this.value)">${['new','quoted','paid','in production','ready','shipped','completed','cancelled'].map((status) => `<option ${status === order.status ? 'selected' : ''}>${status}</option>`).join('')}</select></div></article>`).join('') : '<p class="empty">No orders match this view.</p>';
+      }
+      async function changeStatus(id, status) { await fetch(`/api/orders/${id}/status`, { method: 'PATCH', body: new URLSearchParams({ status }) }); loadOrders(); }
+      document.querySelectorAll('.filter').forEach((button) => button.addEventListener('click', () => { currentFilter = button.dataset.filter; document.querySelectorAll('.filter').forEach((item) => item.classList.toggle('active', item === button)); renderOrders(); }));
+      function escapeHtml(value) { return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char]); }
+      loadOrders();
+    </script>
+  </body>
+</html>

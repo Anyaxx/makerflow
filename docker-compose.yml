@@ -1,0 +1,27 @@
+services:
+  app:
+    build: .
+    container_name: print-shop-order-desk
+    ports:
+      - "8000:8000"
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: gemma3:4b
+      DATABASE_PATH: /app/data/orders.db
+      MAX_UPLOAD_MB: 10
+    depends_on:
+      - ollama
+    volumes:
+      - order_data:/app/data
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: print-shop-ollama
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  order_data:
+  ollama_data:
